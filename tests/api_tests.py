@@ -15,20 +15,20 @@ class TestAPI(unittest.TestCase):
     """ Tests for the posts API """
 
     def setUp(self):
-        """ Test setup """
+        # Test setup
         self.client = app.test_client()
 
         # Set up the tables in the database
         Base.metadata.create_all(engine)
 
     def tearDown(self):
-        """ Test teardown """
+        # Test teardown
         session.close()
         # Remove the tables and their data from the database
         Base.metadata.drop_all(engine)
 
     def test_get_empty_posts(self):
-        """ Getting posts from an empty database """
+        # Getting posts from an empty database
         response = self.client.get("/api/posts",
             headers=[("Accept", "application/json")]
         )
@@ -40,7 +40,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(data, [])
         
     def test_get_posts(self):
-        """ Getting posts from a populated database """
+        # Getting posts from a populated database
         postA = models.Post(title="Example Post A", body="Just a test")
         postB = models.Post(title="Example Post B", body="Still a test")
 
@@ -66,7 +66,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(postB["body"], "Still a test")
 
     def test_get_post(self):
-        """ Getting a single post from a populated database """
+        # Getting a single post from a populated database
         postA = models.Post(title="Example Post A", body="Just a test")
         postB = models.Post(title="Example Post B", body="Still a test")
 
@@ -85,7 +85,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(post["body"], "Still a test")
 
     def test_get_non_existent_post(self):
-        """ Getting a single post which doesn't exist """
+        # Getting a single post which doesn't exist
         response = self.client.get("/api/posts/1",
             headers=[("Accept", "application/json")]
         )
@@ -97,6 +97,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(data["message"], "Could not find post with id 1")
 
     def test_unsupported_accept_header(self):
+        # client does not support format
         response = self.client.get("/api/posts",
             headers=[("Accept", "application/xml")]
         )
@@ -105,8 +106,22 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.mimetype, "application/json")
 
         data = json.loads(response.data.decode("ascii"))
-        self.assertEqual(data["message"],
-                         "Request must accept application/json data")
+        self.assertEqual(data["message"], "Request must accept application/json data")
 
+    def test_delete_post(self):
+        # deleting a single post
+        
+        postC = models.Post(title="Example Post C", body="Yet another a test")
+        session.add(postC)
+        session.commit()
+        
+        response = self.client.delete("/api/posts/1",
+            headers=[("Accept", "application/json")]
+        )
+    
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data.decode("ascii"))
+        self.assertEqual(data["message"], "Post with id 1 has been deleted")
+    
 if __name__ == "__main__":
     unittest.main()
